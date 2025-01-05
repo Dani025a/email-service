@@ -22,17 +22,24 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: '22' # Specify the Node.js version you are using
-        cache: 'pnpm' # Change to 'npm' or 'yarn' if not using pnpm
 
+    # Install pnpm
+    - name: Install pnpm
+      run: npm install -g pnpm
+
+    # Install dependencies
     - name: Install dependencies
       run: pnpm install
 
+    # Build the project
     - name: Build the project
       run: pnpm build
 
+    # Run tests
     - name: Run tests
       run: pnpm test
 
+    # Save artifacts (optional, if you want to save build/test reports)
     - name: Save artifacts
       if: failure()
       uses: actions/upload-artifact@v3
