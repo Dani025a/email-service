@@ -1,12 +1,8 @@
-name: Email Service CI
+name: CI for Email Service
 
 on:
   push:
-    paths:
-      - 'services/email-service/**'
   pull_request:
-    paths:
-      - 'services/email-service/**'
 
 jobs:
   build-and-test:
@@ -21,11 +17,11 @@ jobs:
 
     - name: Build Docker Image
       run: |
-        docker build -t email-service:latest ./services/email-service
+        docker build -t email-service:latest .
 
     - name: Run Docker Container
       run: |
-        docker run -d --name email-service -p 3000:3000 email-service:latest
+        docker run -d --name email-service email-service:latest
 
     - name: Wait for Service
       run: |
