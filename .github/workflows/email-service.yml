@@ -1,39 +1,43 @@
-name: CI for Email Service
+name: CI/CD Pipeline
 
 on:
   push:
+    branches:
+      - main
   pull_request:
+    branches:
+      - main
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Code
+    # Checkout the code from the repository
+    - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Set up Docker
-      uses: docker/setup-buildx-action@v2
+    # Set up Node.js
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '22' # Specify the Node.js version you are using
+        cache: 'pnpm' # Change to 'npm' or 'yarn' if not using pnpm
 
-    - name: Build Docker Image
-      run: |
-        docker build -t email-service:latest .
+    - name: Install dependencies
+      run: pnpm install
 
-    - name: Run Docker Container
-      run: |
-        docker run -d --name email-service email-service:latest
+    - name: Build the project
+      run: pnpm build
 
-    - name: Wait for Service
-      run: |
-        for i in {1..10}; do
-          curl -f http://localhost:3000/health || sleep 5;
-        done
+    - name: Run tests
+      run: pnpm test
 
-    - name: Run Tests
-      run: |
-        docker exec email-service pnpm test
-
-    - name: Clean Up
-      run: |
-        docker stop email-service
-        docker rm email-service
+    - name: Save artifacts
+      if: failure()
+      uses: actions/upload-artifact@v3
+      with:
+        name: build-or-test-failures
+        path: |
+          coverage/
+          test-results.xml
