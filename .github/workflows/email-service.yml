@@ -1,0 +1,75 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      rabbitmq:
+        image: rabbitmq:3-management
+        ports:
+          - 5672:5672 # Port for RabbitMQ messaging
+          - 15672:15672 # Port for RabbitMQ management UI
+        options: >-
+          --health-cmd "rabbitmq-diagnostics ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    # Checkout the code from the repository
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    # Set up Node.js
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '22' # Specify the Node.js version you are using
+
+    # Install pnpm
+    - name: Install pnpm
+      run: npm install -g pnpm
+
+    # Install dependencies
+    - name: Install dependencies
+      run: pnpm install
+
+    # Wait for RabbitMQ to be ready
+    - name: Wait for RabbitMQ
+      run: |
+        echo "Waiting for RabbitMQ to be ready..."
+        for i in {1..30}; do
+          nc -z localhost 5672 && echo "RabbitMQ is ready!" && exit 0
+          echo "Waiting for RabbitMQ..."
+          sleep 1
+        done
+        echo "RabbitMQ did not become ready in time!" && exit 1
+
+    # Build the project
+    - name: Build the project
+      run: pnpm build
+
+    # Run tests
+    - name: Run tests
+      env:
+        RABBITMQ_URL: amqp://localhost:5672 # Set RabbitMQ connection URL
+      run: pnpm test
+
+    # Save artifacts (optional, if you want to save build/test reports)
+    - name: Save artifacts
+      if: failure()
+      uses: actions/upload-artifact@v3
+      with:
+        name: build-or-test-failures
+        path: |
+          coverage/
+          test-results.xml
