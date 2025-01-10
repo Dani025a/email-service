@@ -13,10 +13,10 @@ export const startEmailReceiver = async () => {
 
     channel.consume(QUEUE_NAME, async (msg) => {
       if (msg !== null) {
-        const { email, resetToken } = JSON.parse(msg.content.toString());
+        const { email, resetToken, user } = JSON.parse(msg.content.toString());
         console.log(`Received message for ${email}`);
 
-        await sendPasswordResetEmail(email, resetToken);
+        await sendPasswordResetEmail(email, resetToken, user);
 
         channel.ack(msg);
       }
